@@ -278,14 +278,6 @@ func (p *Plugin) Exec() error {
 		}
 	}
 
-	testCommand := make([]string, 1)
-	testCommand = append(testCommand, "helm")
-	testCommand = append(testCommand, "search")
-	testCommand = append(testCommand, "swrtc")
-	if err = runCommand(testCommand); err != nil {
-		return fmt.Errorf("Problem: " + err.Error())
-	}
-
 	setHelmCommand(p)
 
 	if p.Config.Debug {
