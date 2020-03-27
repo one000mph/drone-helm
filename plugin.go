@@ -262,7 +262,9 @@ func (p *Plugin) Exec() error {
 				}
 
 				repoUpdate, err := doHelmRepoUpdate()
-				log.Println("updating helm repo: " + strings.Join(repoUpdate[:], " "))
+				if p.Config.Debug {
+					log.Println("updating helm repo: " + strings.Join(repoUpdate[:], " "))
+				}
 				if err == nil {
 					if err = runCommand(repoUpdate); err != nil {
 						return fmt.Errorf("Error updating helm repo: " + err.Error())
@@ -274,6 +276,14 @@ func (p *Plugin) Exec() error {
 				return err
 			}
 		}
+	}
+
+	testCommand := make([]string, 1)
+	testCommand = append(testCommand, "helm")
+	testCommand = append(testCommand, "search")
+	testCommand = append(testCommand, "swrtc")
+	if err = runCommand(testCommand); err != nil {
+		return fmt.Errorf("Problem: " + err.Error())
 	}
 
 	setHelmCommand(p)
