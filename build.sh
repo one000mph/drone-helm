@@ -5,4 +5,4 @@ set -e
 export GOOS=linux
 export GOARCH=386
 go build
-docker build -t drone-helm .
+docker build -t one000mph/drone-helm .

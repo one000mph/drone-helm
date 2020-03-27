@@ -13,8 +13,11 @@ import (
 	"github.com/alecthomas/template"
 )
 
-var HELM_BIN = "/bin/helm"
-var KUBECONFIG = "/root/.kube/kubeconfig"
+// helmBin : Helm Binary path
+var helmBin = "/bin/helm"
+
+// kubeConfig: Kubernetes config path
+var kubeConfig = "/root/.kube/kubeconfig"
 
 type (
 	// Config maps the params we need to run Helm
@@ -185,6 +188,15 @@ func doHelmRepoAdd(repo string) ([]string, error) {
 	return repoAdd, nil
 }
 
+func doHelmRepoUpdate() ([]string, error) {
+
+	repoUpdate := []string{
+		"repo",
+		"update",
+	}
+	return repoUpdate, nil
+}
+
 func doHelmInit(p *Plugin) []string {
 	init := make([]string, 1)
 	init[0] = "init"
@@ -216,15 +228,15 @@ func (p *Plugin) Exec() error {
 	if _, err := os.Stat(p.Config.KubeConfig); os.IsNotExist(err) {
 		resolveSecrets(p)
 		if p.Config.APIServer == "" {
-			return fmt.Errorf("Error: API Server is needed to deploy.")
+			return fmt.Errorf("error: API Server is needed to deploy")
 		}
 		if p.Config.Token == "" {
-			return fmt.Errorf("Error: Token is needed to deploy.")
+			return fmt.Errorf("error: Token is needed to deploy")
 		}
 		if p.Config.SkipTLSVerify == false && p.Config.Certificate == "" {
-			return fmt.Errorf("Error: Certificate is needed to deploy when SKIP_TLS_VERIFY is false.")
+			return fmt.Errorf("error: Certificate is needed to deploy when SKIP_TLS_VERIFY is false")
 		}
-		initialiseKubeconfig(&p.Config, KUBECONFIG, p.Config.KubeConfig)
+		initialiseKubeconfig(&p.Config, kubeConfig, p.Config.KubeConfig)
 	}
 
 	if p.Config.Debug {
@@ -247,6 +259,16 @@ func (p *Plugin) Exec() error {
 
 				if err = runCommand(repoAdd); err != nil {
 					return fmt.Errorf("Error adding helm repo: " + err.Error())
+				}
+
+				repoUpdate, err := doHelmRepoUpdate()
+				log.Println("updating helm repo: " + strings.Join(repoUpdate[:], " "))
+				if err == nil {
+					if err = runCommand(repoUpdate); err != nil {
+						return fmt.Errorf("Error updating helm repo: " + err.Error())
+					}
+				} else {
+					return err
 				}
 			} else {
 				return err
@@ -282,7 +304,7 @@ func initialiseKubeconfig(params *Config, source string, target string) error {
 
 func runCommand(params []string) error {
 	cmd := new(exec.Cmd)
-	cmd = exec.Command(HELM_BIN, params...)
+	cmd = exec.Command(helmBin, params...)
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -369,7 +391,7 @@ func (p *Plugin) debug() {
 	fmt.Printf("Secrets: %s \n", p.Config.Secrets)
 	fmt.Printf("Helm Repos: %s \n", p.Config.HelmRepos)
 	fmt.Printf("ValuesFiles: %s \n", p.Config.ValuesFiles)
-	kubeconfig, err := ioutil.ReadFile(KUBECONFIG)
+	kubeconfig, err := ioutil.ReadFile(kubeConfig)
 	if err == nil {
 		fmt.Println(string(kubeconfig))
 	}
